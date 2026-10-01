@@ -1,0 +1,167 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>College Football Sim 2026</title>
+<style>
+:root{--bg:#0f1115;--c:#181b22;--t:#e8eaed;--m:#8b93a1;--b:#2a2f3a}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px;background:var(--c);border-bottom:1px solid var(--b)}
+h1{font-size:18px;margin:0 auto 0 0}button,select{background:#2b3140;color:var(--t);border:1px solid var(--b);border-radius:6px;padding:7px 12px;font:inherit;cursor:pointer}button:hover{background:#384053}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:14px}@media(max-width:800px){main{grid-template-columns:1fr}}
+.card{background:var(--c);border:1px solid var(--b);border-radius:10px;padding:12px;overflow:auto}.full{grid-column:1/-1}
+h2{font-size:15px;margin:0 0 8px}.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid #fff3}
+.r{display:flex;align-items:center;padding:4px 0;border-bottom:1px solid var(--b)}.r b{width:28px}.r span{flex:1}.r em{color:var(--m);font-style:normal;margin-left:10px}
+.ban{border-radius:8px;padding:12px;font-size:20px;font-weight:700;margin-bottom:10px}.ban small{font-weight:400;opacity:.8;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:10px}.tile{background:#222733;border-radius:8px;padding:8px}.tile small{color:var(--m);display:block}.tile div{font-size:16px;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 6px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--b)}th:first-child,td:first-child{text-align:left}th{color:var(--m);cursor:pointer;position:sticky;top:0;background:var(--c)}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;flex-wrap:wrap}.tabs .on{background:#4a6cf7}[hidden]{display:none!important}.w{color:#4ade80!important}.l{color:#f87171!important}
+</style></head><body>
+<header><h1>🏈 College Football Sim 2026</h1><select id="fav"></select><button id="wk">Sim next week</button><button id="sea">Sim season</button><button id="nx">Next season ▶</button><button id="rst">Reset sim</button><span id="wl"></span></header>
+<nav class=tabs id=tabs></nav><main class=tab><div class="card"><h2>Top 25</h2><div id="p25"></div></div><div class="card" id="dash"></div>
+</main><main class=tab><div class="card full" id=conf></div></main><main class=tab><div class="card full" id=po></div></main><main class=tab><div class="card full" id=bw></div></main><main class=tab><div class="card full"><h2>All teams <select id=cf></select></h2><div style="max-height:600px;overflow:auto"><table id=tb></table></div></div></main>
+<script>
+/* ===== DATA (edit me): "Team|overall|primaryHex". Ratings seeded from the AP poll entering Week 5 (Sep 27, 2026). ===== */
+const D={
+SEC:"Alabama|92|9E1B32,Arkansas|76|9D2235,Auburn|78|0C2340,Florida|90|0021A5,Georgia|96|BA0C2F,Kentucky|79|0033A0,LSU|89|461D7C,Mississippi State|82|660000,Missouri|82|F1B82D,Oklahoma|84|841617,Ole Miss|90|14213D,South Carolina|76|73000A,Tennessee|86|FF8200,Texas|97|BF5700,Texas A&M|84|500000,Vanderbilt|74|866D4B",
+"Big Ten":"Illinois|76|E84A27,Indiana|92|990000,Iowa|85|FFCD00,Maryland|66|E03A3E,Michigan|82|00274C,Michigan State|66|18453B,Minnesota|70|7A0019,Nebraska|76|E41C38,Northwestern|62|4E2A84,Ohio State|94|BB0000,Oregon|88|154733,Penn State|86|041E42,Purdue|58|CEB888,Rutgers|66|CC0033,UCLA|80|2D68C4,USC|86|990000,Washington|76|4B2E83,Wisconsin|72|C5050C",
+"Big 12":"Arizona|72|CC0033,Arizona State|78|8C1D40,Baylor|72|154734,BYU|88|002E5D,Cincinnati|74|E00122,Colorado|70|CFB87C,Houston|80|C8102E,Iowa State|76|C8102E,Kansas|70|0051BA,Kansas State|74|512888,Oklahoma State|80|FF7300,TCU|74|4D1979,Texas Tech|88|CC0000,UCF|70|BA9B37,Utah|87|CC0000,West Virginia|68|002855",
+ACC:"Boston College|58|98002E,California|66|003262,Clemson|82|F56600,Duke|72|003087,Florida State|76|782F40,Georgia Tech|74|B3A369,Louisville|76|AD0000,Miami|94|F47321,NC State|70|CC0000,North Carolina|68|7BAFD4,Pitt|72|003594,SMU|82|CC0035,Stanford|62|8C1515,Syracuse|62|D44500,Virginia|76|F84C1E,Virginia Tech|70|861F41,Wake Forest|66|9E7E38",
+"Pac-12":"Boise State|80|0033A0,Colorado State|58|1E4D2B,Fresno State|66|DB0032,Oregon State|64|DC4405,San Diego State|66|A6192E,Texas State|64|501214,Utah State|60|0F2439,Washington State|68|981E32",
+AAC:"Army|70|D3BC8D,Charlotte|48|046A38,East Carolina|62|592A8A,Florida Atlantic|54|003366,Memphis|72|003087,Navy|70|00205B,North Texas|70|00853E,Rice|56|00205B,South Florida|70|006747,Temple|52|9D2235,Tulane|72|006747,Tulsa|54|002D72,UAB|58|1E6B52,UTSA|66|0C2340",
+"Mountain West":"Air Force|56|003087,Hawaii|54|024731,Nevada|50|003366,New Mexico|50|BA0C2F,San Jose State|58|0055A2,UNLV|68|CF0A2C,Wyoming|58|492F24,UTEP|56|FF8200,Northern Illinois|62|BA0C2F",
+MAC:"Akron|46|041E42,Ball State|46|BA0C2F,Bowling Green|58|FE5000,Buffalo|54|005BBB,Central Michigan|52|6A0032,Eastern Michigan|50|006633,Kent State|40|002664,UMass|44|881C1C,Miami (OH)|64|B61E2E,Ohio|62|00694E,Toledo|66|15397F,Western Michigan|62|694A38,Sacramento State|50|043927",
+"Sun Belt":"App State|64|222222,Arkansas State|56|CC092F,Coastal Carolina|60|006F71,Georgia Southern|60|011E41,Georgia State|50|0039A6,James Madison|72|450084,Louisiana|64|CE181E,Louisiana-Monroe|44|840029,Marshall|66|00B140,Old Dominion|66|003057,South Alabama|64|00205B,Southern Miss|54|FFAB00,Troy|62|8A2432",
+"C-USA":"Delaware|50|00539F,FIU|58|081E3F,Jacksonville State|64|CC0000,Kennesaw State|48|FDBB30,Liberty|66|002D62,Louisiana Tech|54|002F8B,Middle Tennessee|54|0066CC,Missouri State|52|5E0009,New Mexico State|46|8B0000,Sam Houston|58|FE5000,Western Kentucky|62|C60C30",
+Independent:"Notre Dame|95|0C2340,UConn|58|000E2F"};
+const AP="Texas,Georgia,Notre Dame,Miami,Ohio State,Indiana,Alabama,Florida,Ole Miss,BYU,LSU,Texas Tech,Utah,Iowa,Oregon,Mississippi State,Tennessee,USC,Oklahoma State,Houston,SMU,Boise State,UCLA,Kentucky,Missouri".split(",");
+/* Home-field edge in points (default 2.5) */
+const HF={LSU:3.8,Georgia:3.6,Tennessee:3.7,"Texas A&M":3.6,"Ohio State":3.5,"Penn State":3.6,Alabama:3.5,Texas:3.3,Oregon:3.5,Iowa:3.5,Utah:3.5,"Boise State":3.8,Clemson:3.4,Michigan:3.4,Wisconsin:3.3,"Texas Tech":3.4,Auburn:3.4,Nebraska:3.4,Army:2.8,Navy:2.8,"Air Force":2.8,"Kent State":1.5,UMass:1.5,Charlotte:1.5,Temple:1.5,Akron:1.6,"Ball State":1.6,Rutgers:1.8,Stanford:1.8,Northwestern:1.8};
+const MIL=["Army","Navy","Air Force"];
+/* Rivalries: "TeamA|TeamB|week". Always scheduled, and they swing momentum 2.2x */
+const RIV="Texas|Oklahoma|5,Oklahoma State|Oklahoma|11,Michigan|Ohio State|12,USC|Notre Dame|10,Alabama|Auburn|12,Georgia|Florida|9,Florida|Florida State|12,Texas|Texas A&M|12,Tennessee|Alabama|7,LSU|Alabama|10,Ole Miss|Mississippi State|12,Clemson|South Carolina|12,Georgia|Georgia Tech|12,Army|Navy|12,Utah|BYU|4,Oregon|Washington|8,Michigan|Michigan State|7,Miami|Florida State|8,Iowa|Nebraska|11,Pitt|West Virginia|3,Arizona|Arizona State|12,Penn State|Ohio State|6,Kentucky|Louisville|12,Wisconsin|Minnesota|11".split(",").map(x=>x.split("|"));
+
+/* ===== SETUP ===== */
+const $=id=>document.getElementById(id);
+const T=[];let n=0,wk=0,sortK=2,PO=null,PG=[],BW=[],season=1,hist=[],ORD=[],tab=0,CG=[],PRE=AP;
+for(const c in D)D[c].split(",").forEach(s=>{const[a,o,h]=s.split("|");T.push({id:n++,n:a,c,ovr:+o,col:"#"+h})});
+const NF=T.length;
+["East","West","North","South"].forEach(x=>T.push({id:n++,n:"FCS "+x,c:"FCS",ovr:40,col:"#6b7280",fcs:1}));
+T.forEach(t=>{const k=(t.id*37%13-6)*.6;t.k=k;t.o0=t.ovr;t.off=t.ovr+k;t.def=t.ovr-k;t.hfa=HF[t.n]||2.5;t.mil=MIL.includes(t.n)});
+const tx=h=>{const v=parseInt(h.slice(1),16);return((v>>16)*299+(v>>8&255)*587+(v&255)*114)/1000>150?"#111":"#fff"};
+const pe=(x,y,H,s)=>27+(x.off-y.def)*.28+s*H.hfa/2+x.mom*.5; // expected points (s=+1 home, -1 away)
+const nr=()=>Math.sqrt(-2*Math.log(1-Math.random()))*Math.cos(6.283*Math.random());
+
+/* PLACEHOLDER schedule generator (seeded, same every reset). Replace G with real ESPN data: [{w:1,h:homeId,a:awayId},...] */
+const mk=seed=>{let s=seed;const r=()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=r()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const F=T.slice(0,NF),g=[],P=new Set(),fc={};
+const RW={};RIV.forEach(([a,b,w],i)=>{const A=T.find(t=>t.n===a),B=T.find(t=>t.n===b);if(!A||!B)return;(RW[w]=RW[w]||new Set()).add(A.id).add(B.id);P.add(A.id+"-"+B.id);P.add(B.id+"-"+A.id);g.push((i+season)%2?{w:+w,h:A.id,a:B.id,r:1}:{w:+w,h:B.id,a:A.id,r:1})});
+for(let w=1;w<=12;w++){const u=new Set(RW[w]||[]);
+for(const t of sh(F)){if(u.has(t.id))continue;u.add(t.id);
+const pf=o=>(w>3)===(o.c===t.c)?0:1;
+const o=sh(F).filter(o=>!u.has(o.id)&&!P.has(t.id+"-"+o.id)).sort((a,b)=>pf(a)-pf(b))[0];
+if(!o||(w<=3&&!fc[t.id]&&r()<.3)){if(!fc[t.id]){fc[t.id]=1;g.push({w,h:t.id,a:NF+(r()*4|0)})}continue}
+u.add(o.id);P.add(t.id+"-"+o.id);P.add(o.id+"-"+t.id);g.push(r()<.5?{w,h:t.id,a:o.id}:{w,h:o.id,a:t.id})}}
+return g};let G=mk(2026);
+
+/* ===== SIM ===== */
+function start(){PO=null;PG=[];BW=[];CG=[];
+T.forEach(t=>Object.assign(t,{champ:0,w:0,l:0,cw:0,cl:0,pf:0,pa:0,mom:0,rk:null,prev:null,proj:0,log:[],s:{pY:0,rY:0,pT:0,rT:0,int:0,dI:0}}));
+G.forEach(g=>{delete g.hs;delete g.as});
+PRE.forEach((x,i)=>T.find(t=>t.n===x).rk=i+1);T.forEach(t=>t.prev=t.rk);wk=0;
+G.forEach(g=>{const H=T[g.h],A=T[g.a],p=1/(1+Math.exp(-(pe(H,A,H,1)-pe(A,H,H,-1))/6));H.proj+=p;A.proj+=1-p;g.ex=p});T.forEach(t=>t.rem=t.proj);
+render()}
+function play(g){
+const H=T[g.h],A=T[g.a],Q=g.n?{hfa:0}:H,sd=t=>t.mil?5:7.5,m=pe(H,A,Q,1)-pe(A,H,Q,-1);if(g.ex!=null){H.rem-=g.ex;A.rem-=1-g.ex} // military teams: lower variance, honest ratings
+let ph=Math.max(0,Math.round(pe(H,A,Q,1)+nr()*sd(H))),pa=Math.max(0,Math.round(pe(A,H,Q,-1)+nr()*sd(A)));
+if(ph===pa)Math.random()<1/(1+Math.exp(-m/6))?ph+=3:pa+=3;
+g.hs=ph;g.as=pa;const cf=H.c===A.c&&!H.fcs;
+[[H,A,ph,pa,1],[A,H,pa,ph,0]].forEach(([t,o,f,a,h])=>{
+const w=f>a,s=t.s,tds=f/7|0;
+if(!g.p){t.pf+=f;t.pa+=a;w?t.w++:t.l++;if(cf)w?t.cw++:t.cl++;t.log.push({w:g.w,o:o.id,or:o.rk,h,f,a})}
+t.mom=Math.max(-4,Math.min(4,t.mom*.7+(w?1:-1)*(1+(Math.abs(f-a)>=14?.5:0)+(o.rk?.5:0))*(g.r?2.2:1)));
+let pt=0;for(let i=0;i<tds;i++)if(Math.random()<(t.mil?.15:.55))pt++;
+s.pT+=pt;s.rT+=tds-pt;
+s.pY+=Math.max(20,Math.round((t.mil?.4:1)*(110+t.off*1.4+f*3+nr()*35)));
+s.rY+=Math.max(20,Math.round((t.mil?1.9:1)*(55+t.off*.6+f*2.5+nr()*30)));
+let x=0;for(let i=0;i<3;i++)if(Math.random()<.17+(o.def-t.off)*.003)x++;
+s.int+=x;o.s.dI+=x})}
+/* Poll: prior rating + resume (quality wins/bad losses) + SOS + conference strength + margin + inertia, then jump limits */
+function rank(){
+const F=T.filter(t=>!t.fcs),ca={};
+F.forEach(t=>(ca[t.c]=ca[t.c]||[]).push(t.ovr));for(const c in ca)ca[c]=ca[c].reduce((a,b)=>a+b)/ca[c].length;
+F.forEach(t=>{const g=t.log.length;let sos=60,rs=0;
+if(g){sos=0;t.log.forEach(x=>{const o=T[x.o];sos+=o.ovr/g;rs+=x.f>x.a?4+o.ovr*.1+(x.or?3:0):-(14-o.ovr*.08)})}
+t.sc=t.ovr*.35+ca[t.c]*.05+sos*.1+rs*.9+(t.rk?(26-t.rk)*.3:0)+(g?(t.pf-t.pa)/g*.15:0);
+t.prev=t.rk;const up=t.log.some(x=>x.f>x.a&&x.or&&x.or<=3);
+t.mi=t.prev?Math.max(0,t.prev-9):up?4:11}); // ranked: max 8-spot climb; unranked: no top 10 unless beat a top-3 team
+const o=F.sort((a,b)=>b.sc-a.sc);
+for(let p=0;p<4;p++)[...o].forEach(t=>{const i=o.indexOf(t);if(i<t.mi){o.splice(i,1);o.splice(t.mi,0,t)}});
+ORD=o;o.forEach((t,i)=>t.rk=i<25?i+1:null)}
+function simWeek(){if(wk>=12){postseason();render();return}wk++;G.filter(g=>g.w===wk).forEach(play);rank();render()}
+
+/* ===== POSTSEASON / SEASONS ===== */
+const CN=()=>Object.keys(D).filter(c=>c!=="Independent"),cp=t=>t.cw/(t.cw+t.cl||1),cmp=(a,b)=>cp(b)-cp(a)||(b.cw+b.cl)-(a.cw+a.cl)||b.w-a.w||b.ovr-a.ovr;
+const G6=["Pac-12","AAC","Mountain West","MAC","Sun Belt","C-USA"];
+/* CFP RULES (edit me): 12 teams. Top 5 ranked conference champs get auto-bids, but the best Group of 6 champ is guaranteed one.
+   An independent (Notre Dame) ranked top 10 gets in. Rest at-large. Seeded by rank; seeds 1-4 get byes. */
+const pick=(o,ch)=>{let c=o.filter(t=>ch.includes(t)).slice(0,5);const g=o.find(t=>ch.includes(t)&&G6.includes(t.c));
+if(g&&!c.includes(g))c=[...c.slice(0,4),g];
+const nd=o.slice(0,10).find(t=>t.c==="Independent"),f=[...c];if(nd&&!f.includes(nd))f.push(nd);
+o.forEach(t=>{if(f.length<12&&!f.includes(t))f.push(t)});return f.sort((a,b)=>o.indexOf(a)-o.indexOf(b))};
+const BN="Pop-Tarts,Citrus,Alamo,Holiday,Gator,Texas,Music City,Sun,Liberty,Las Vegas,Pinstripe,Fenway,Duke's Mayo,Military,Armed Forces,Independence,Birmingham,Gasparilla,Frisco,Boca Raton,Myrtle Beach,Potato,New Mexico,Arizona,Cure,Hawaii,LA,Salute to Veterans,Rate,First Responder,Bahamas".split(",").map(x=>x+" Bowl");
+const res=t=>{if(!PO)return"—";const a=[...CG,...PG,...BW].filter(x=>x.a===t||x.b===t);return a.length?a.map(x=>(x.w===t?"W ":"L ")+x.nm).join(", "):"None"};
+function reset(){season=1;hist=[];PRE=AP;T.forEach(t=>{t.d=0;t.ovr=t.o0;t.off=t.ovr+t.k;t.def=t.ovr-t.k});G=mk(2026);start()}
+function postseason(){if(wk<12||PO)return;
+const F=T.filter(t=>!t.fcs);CG=[];PG=[];BW=[];
+const gm=(a,b,r,L,n)=>{const g={h:a.id,a:b.id,n:1,p:1};play(g);const w=g.hs>g.as?a:b;L.push({rd:r,nm:n||r,a,b,hs:g.hs,as:g.as,w});return w};
+const ch=CN().map(c=>{const m=F.filter(t=>t.c===c).sort(cmp);return gm(m[0],m[1],c+" Championship",CG)});ch.forEach(t=>t.champ=1);
+const S=pick(ORD,ch),QN=["Rose","Sugar","Orange","Cotton"].map(x=>x+" Bowl"),SN=["Fiesta","Peach"].map(x=>x+" Bowl");
+const r=[[4,11],[5,10],[6,9],[7,8]].map(([a,b])=>gm(S[a],S[b],"First Round",PG));
+const q=[[S[0],r[3]],[S[3],r[0]],[S[1],r[2]],[S[2],r[1]]].map(([a,b],i)=>gm(a,b,"Quarterfinal",PG,QN[i]));
+const c=gm(gm(q[0],q[1],"Semifinal",PG,SN[0]),gm(q[2],q[3],"Semifinal",PG,SN[1]),"Championship",PG,"National Championship");
+const el=ORD.filter(t=>t.w>=6&&!S.includes(t));
+for(let i=0;i+1<el.length;i+=2)gm(el[i],el[i+1],"Bowl",BW,BN[i/2]||"Bowl "+(i/2+1));
+PO={fld:S,c}}
+/* playoff depth: 4 champ, 3 runner-up, 2 lost semi, 1 lost quarter */
+const adv=t=>{const g=PG.filter(x=>x.a===t||x.b===t);return g.some(x=>x.rd==="Championship")?(PO.c===t?4:3):g.some(x=>x.rd==="Semifinal")?2:g.some(x=>x.rd==="Quarterfinal")?1:0};
+/* New season: small drift (+-2), big jumps for big over/under-performers, deep playoff runs boost ratings and the preseason poll */
+function nextSeason(){if(!PO)return;const F=T.filter(t=>!t.fcs);
+hist.push({y:2025+season,ch:PO.c.n,t:ORD.slice(0,25).map(t=>t.n)});
+F.forEach(t=>{const x=t.w-t.proj;let d=Math.max(-2,Math.min(2,Math.round(nr()*.8+x*.2)));
+if(x>=2.5)d=Math.round(3+x*1.2);else if(x<=-3)d=-Math.round(1-x);
+d+=[0,0,0,1,2][adv(t)];d=Math.max(-6,Math.min(9,d));
+t.d=d;t.ovr=Math.max(35,Math.min(t.mil?74:99,t.ovr+d));t.off=t.ovr+t.k;t.def=t.ovr-t.k});
+const L=[...new Set([...ORD.slice(0,30),...PO.fld])].map(t=>[t,ORD.indexOf(t)+nr()*2-t.d*.5]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]),CP=[0,12,8,4,2];
+for(let p=0;p<2;p++)L.forEach(t=>{const c=CP[adv(t)],i=L.indexOf(t);if(c&&i>=c){L.splice(i,1);L.splice(c-1,0,t)}}); // e.g. an 11 seed in the title game opens at #4 or better
+PRE=L.slice(0,25).map(t=>t.n);season++;G=mk(season*7919);start()}
+const nm=t=>`<i class=dot style="background:${t.col}"></i>${t.n}`,sdd=t=>PO&&PO.fld.includes(t)?"#"+(PO.fld.indexOf(t)+1)+" ":"";
+const gl=g=>`<div class=r><span>${sdd(g.a)}${nm(g.a)}</span><em class="${g.w===g.a?"w":"l"}">${g.hs}</em><em>vs</em><span style="text-align:right">${sdd(g.b)}${nm(g.b)}</span><em class="${g.w===g.b?"w":"l"}">${g.as}</em></div>`;
+const pr=(a,b)=>`<div class=r><span>${nm(a)}</span><em>vs</em><span style="text-align:right">${nm(b)}</span></div>`,cap=x=>`<div style="color:var(--m);margin-top:8px">${x}</div>`;
+function xtra(){const F=T.filter(t=>!t.fcs),pv=t=>(t.w+t.rem)*4+t.ovr*.3;
+const o=[...F].sort((a,b)=>pv(b)-pv(a)),ch=CN().map(c=>F.filter(t=>t.c===c).sort((a,b)=>pv(b)-pv(a))[0]),fl=pick(o,ch);
+const st=CN().concat("Independent").map(c=>{const m=F.filter(t=>t.c===c);return{c,m:m.sort(cmp),av:m.reduce((a,t)=>a+t.ovr,0)/m.length}}).sort((a,b)=>b.av-a.av);
+$("conf").innerHTML="<h2>Conference strength (avg overall)</h2>"+st.map(x=>`${x.c} ${x.av.toFixed(1)}`).join(" · ")+st.map(x=>{const g=CG.find(g=>g.rd===x.c+" Championship");return`<h2 style="margin-top:14px">${x.c}</h2>${g?gl(g):x.c==="Independent"?"":cap("Title game if the season ended now: "+x.m[0].n+" vs "+x.m[1].n)}<table><tr><th>Team</th><th>Conf</th><th>Overall</th><th>Ovr</th></tr>${x.m.map(t=>`<tr><td>${nm(t)}${t.champ?" 🏆":""}</td><td>${t.cw}-${t.cl}</td><td>${t.w}-${t.l}</td><td>${t.ovr}</td></tr>`).join("")}</table>`}).join("");
+if(PO)$("po").innerHTML=`<div class=ban style="background:${PO.c.col};color:${tx(PO.c.col)}">🏆 ${2025+season} National Champion: ${PO.c.n}</div>`+["First Round","Quarterfinal","Semifinal","Championship"].map(r=>`<h2 style="margin-top:12px">${r}</h2>`+PG.filter(x=>x.rd===r).map(g=>cap(g.nm)+gl(g)).join("")).join("");
+else $("po").innerHTML="<h2>Projected 12-team playoff field (updates weekly)</h2>"+fl.map((t,i)=>`<div class=r><b>${i+1}</b><span>${nm(t)} <em>${i<4?"first-round bye":""}</em></span><em>${t.w}-${t.l} · proj ${(t.w+t.rem).toFixed(1)}W</em></div>`).join("")+"<p style=color:var(--m)>Rules: the top 5 ranked conference champions get auto-bids, and the best Group of 6 champion (Pac-12, AAC, MWC, MAC, Sun Belt, C-USA) is guaranteed a spot. An independent such as Notre Dame ranked in the top 10 gets in. The rest are at-large, seeded by rank, and seeds 1-4 get byes. Projection = wins so far + expected wins remaining, weighted with team overall.</p>";
+const el=o.filter(t=>t.w+t.rem>=6&&!fl.includes(t));
+$("bw").innerHTML=BW.length?"<h2>Bowl games</h2>"+BW.map(g=>cap(g.nm)+gl(g)).join(""):"<h2>Projected bowl matchups (updates weekly)</h2>"+el.filter((_,i)=>i%2==0).map((a,i)=>el[i*2+1]?cap(BN[i]||"Bowl "+(i+1))+pr(a,el[i*2+1]):"").join("")+"<p style=color:var(--m)>Playoff teams play in the CFP bowls; every other team projected to win 6+ is paired by rank.</p>"}
+/* ===== UI ===== */
+const cols=[["Team",t=>t.n],["Conf",t=>t.c],["Ovr",t=>t.ovr],["Off",t=>Math.round(t.off)],["Def",t=>Math.round(t.def)],["W-L",t=>t.w-t.l],["Conf",t=>t.cw-t.cl],["Proj W",t=>t.proj],["Pass Yds",t=>t.s.pY],["Rush Yds",t=>t.s.rY],["Pass TD",t=>t.s.pT],["Rush TD",t=>t.s.rT],["INT",t=>t.s.int]];
+function render(){
+$("wl").textContent=(2025+season)+" · "+(PO?"Postseason done":wk?`Week ${wk}/12`:"Preseason");
+$("wk").textContent=wk<12?"Sim next week":PO?"Postseason done":"Sim postseason";
+$("tabs").innerHTML=["Dashboard","Conferences","Playoff","Bowls","All teams"].map((x,i)=>`<button class="${i==tab?"on":""}" onclick="tab=${i};render()">${x}</button>`).join("");
+document.querySelectorAll(".tab").forEach((e,i)=>e.hidden=i!=tab);xtra();
+const F=T.filter(t=>!t.fcs);
+$("p25").innerHTML=F.filter(t=>t.rk).sort((a,b)=>a.rk-b.rk).map(t=>`<div class=r><b>${t.rk}</b><span><i class=dot style="background:${t.col}"></i>${t.n}</span><em>${t.w}-${t.l}</em><em>${t.prev?(t.prev>t.rk?"▲"+(t.prev-t.rk):t.prev<t.rk?"▼"+(t.rk-t.prev):"–"):"NEW"}</em></div>`).join("")+(hist.length?`<h2 style="margin-top:14px">${hist[hist.length-1].y} final top 25 · champion ${hist[hist.length-1].ch}</h2><div style="color:var(--m)">${hist[hist.length-1].t.map((x,i)=>(i+1)+". "+x).join(" · ")}</div>`:"");
+const t=T[+$("fav").value],g=t.log.length||1;
+$("dash").innerHTML=`<div class=ban style="background:${t.col};color:${tx(t.col)}">${t.rk?"#"+t.rk+" ":""}${t.n} <small>${t.c}</small></div><div class=tiles>${[["Record",t.w+"-"+t.l],["Conf record",t.cw+"-"+t.cl],["Rank",t.rk?"#"+t.rk:"NR"],["Momentum",t.mom.toFixed(1)],["Ovr/Off/Def",[t.ovr,t.off,t.def].map(Math.round).join("/")],["Proj wins",t.proj.toFixed(1)],["PF/PA per game",(t.pf/g).toFixed(1)+"/"+(t.pa/g).toFixed(1)],["Pass yds",t.s.pY],["Rush yds",t.s.rY],["Pass TD",t.s.pT],["Rush TD",t.s.rT],["INT thrown",t.s.int],["Takeaways (INT)",t.s.dI],["Home edge",t.hfa+" pts"],["Last off-season Δ",((t.d||0)>0?"+":"")+(t.d||0)],["Postseason",res(t)]].map(([a,b])=>`<div class=tile><small>${a}</small><div>${b}</div></div>`).join("")}</div>`+
+G.filter(x=>x.h===t.id||x.a===t.id).map(x=>{const h=x.h===t.id,o=T[h?x.a:x.h],d=x.hs!=null,f=h?x.hs:x.as,a=h?x.as:x.hs;return`<div class=r><b>${x.w}</b><span><i class=dot style="background:${o.col}"></i>${x.r?"🔥 ":""}${h?"vs":"@"} ${o.rk?"#"+o.rk+" ":""}${o.n}</span>${d?`<em class="${f>a?"w":"l"}">${f>a?"W":"L"} ${f}-${a}</em>`:"<em>—</em>"}</div>`}).join("");
+const cf=$("cf").value;
+const rows=F.filter(t=>cf==="All"||t.c===cf).sort((a,b)=>{const x=cols[sortK][1](a),y=cols[sortK][1](b);return typeof x==="string"?x.localeCompare(y):y-x||b.ovr-a.ovr});
+$("tb").innerHTML="<tr>"+cols.map((c,i)=>`<th onclick="sortK=${i};render()">${c[0]}</th>`).join("")+"</tr>"+rows.map(t=>`<tr><td><i class=dot style="background:${t.col}"></i>${t.n}</td><td>${t.c}</td><td>${t.ovr}</td><td>${Math.round(t.off)}</td><td>${Math.round(t.def)}</td><td>${t.w}-${t.l}</td><td>${t.cw}-${t.cl}</td><td>${t.proj.toFixed(1)}</td><td>${t.s.pY}</td><td>${t.s.rY}</td><td>${t.s.pT}</td><td>${t.s.rT}</td><td>${t.s.int}</td></tr>`).join("")}
+$("fav").innerHTML=T.slice(0,NF).map(t=>t).sort((a,b)=>a.n.localeCompare(b.n)).map(t=>`<option value=${t.id}>${t.n}</option>`).join("");
+$("cf").innerHTML=["All",...Object.keys(D)].map(c=>`<option>${c}</option>`).join("");
+try{const s=localStorage.getItem("cfbFav");if(s)$("fav").value=s}catch(e){}
+$("fav").onchange=()=>{try{localStorage.setItem("cfbFav",$("fav").value)}catch(e){}render()};
+$("cf").onchange=render;$("wk").onclick=simWeek;$("sea").onclick=()=>{while(wk<12)simWeek();simWeek()};$("rst").onclick=reset;$("nx").onclick=nextSeason;
+reset();
+</script></body></html>
